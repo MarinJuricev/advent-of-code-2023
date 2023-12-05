@@ -19,21 +19,19 @@ private fun extractFirstAndLastNumberFromLine(
     line: String
 ) = "${line.find { it.isDigit() }}${line.findLast { it.isDigit() }}".toIntOrNull()
 
-private fun convertTextToNumbers(
-    line: String
-) = buildString {
+private fun convertTextToNumbers(line: String) = buildString {
     line.forEachIndexed { lineIndex, c ->
-        if (c.isDigit()) append(c)
-
-        stringToIntConverter.keys.forEach { numberInString ->
-            var temp = ""
-            numberInString.forEachIndexed { index, numberValue ->
-                if (line.getOrNull(lineIndex + index) == numberValue) {
-                    temp += line.getOrNull(lineIndex + index)
+        when {
+            c.isDigit() -> append(c)
+            else -> stringToIntConverter.keys
+                .filter { numberInString ->
+                    numberInString.indices.all { index ->
+                        line.getOrNull(lineIndex + index) == numberInString[index]
+                    }
                 }
-            }
-            if(temp == numberInString)
-                append(stringToIntConverter[numberInString])
+                .map { stringToIntConverter[it] }
+                .firstOrNull()
+                ?.let(::append)
         }
     }
 }
