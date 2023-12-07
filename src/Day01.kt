@@ -1,9 +1,9 @@
 fun main() {
-    check(part1(readInput("Day01_test")) == 142)
-    part1(readInput("Day01")).println()
+    check(part1(readInput("Day01a_test")) == 142)
+    part1(readInput("Day01a")).println()
 
-    check(part2(readInput("Day02_test")) == 281)
-    part2(readInput("Day02")).println()
+    check(part2(readInput("Day01b_test")) == 281)
+    part2(readInput("Day01b")).println()
 }
 
 fun part1(input: List<String>): Int = input
