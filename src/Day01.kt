@@ -6,11 +6,11 @@ fun main() {
     part2(readInput("Day01b")).println()
 }
 
-fun part1(input: List<String>): Int = input
+private fun part1(input: List<String>): Int = input
     .mapNotNull(::extractFirstAndLastNumberFromLine)
     .reduce { acc, i -> acc + i }
 
-fun part2(input: List<String>) = input
+private fun part2(input: List<String>) = input
     .map(::convertTextToNumbers)
     .mapNotNull(::extractFirstAndLastNumberFromLine)
     .reduce { acc, i -> acc + i }
@@ -36,7 +36,7 @@ private fun convertTextToNumbers(line: String) = buildString {
     }
 }
 
-val stringToIntConverter = mapOf(
+private val stringToIntConverter = mapOf(
     "one" to "1",
     "two" to "2",
     "three" to "3",
