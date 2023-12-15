@@ -1,5 +1,6 @@
 fun main() {
     check(part1(readInput("Day03a_test")) == 4361)
+    part1(readInput("Day03a")).println()
 }
 
 private fun part1(
@@ -7,47 +8,44 @@ private fun part1(
 ): Int = input
     .parse()
     .filter { numberWithCoordinates ->
-        (numberWithCoordinates.fromX..numberWithCoordinates.toX).all { xIndex ->
-            true
-        }
-//        when {
-//            input.getOrNull(globalIndex.dec())?.getOrNull(index.dec())?.isValidNumber() == true -> append(c)
-//            input.getOrNull(globalIndex.dec())?.getOrNull(index)?.isValidNumber() == true -> append(c)
-//            input.getOrNull(globalIndex.dec())?.getOrNull(index.inc())?.isValidNumber() == true -> append(c)
-//            line.getOrNull(index.dec())?.isValidNumber() == true -> append(c)
-//            line.getOrNull(index.inc())?.isValidNumber() == true -> append(c)
-//            input.getOrNull(globalIndex.inc())?.getOrNull(index.dec())?.isValidNumber() == true -> append(c)
-//            input.getOrNull(globalIndex.inc())?.getOrNull(index)?.isValidNumber() == true -> append(c)
-//            input.getOrNull(globalIndex.inc())?.getOrNull(index.inc())?.isValidNumber() == true -> append(c)
-//        }
+        calculateIsNextToValidNeighbour(numberWithCoordinates, input).any { it }
+    }.sumOf { it.number }
 
-    }.map {
-        it
-        1
-    }
-    .reduce { acc, unit -> 1 }
-
-private fun Char.isValidNumber(): Boolean = !symbols.contains(this)
-
-private fun List<String>.parse(): List<NumberWithCoordinates> {
-    val numberRegex = "\\d+".toRegex()
-    return flatMapIndexed { y, line ->
-        numberRegex.findAll(line).map { match ->
-            NumberWithCoordinates(
-                number = match.value.toInt(),
-                y = y,
-                fromX = match.range.first,
-                toX = match.range.last,
-            )
-        }
+private fun calculateIsNextToValidNeighbour(
+    numberWithCoordinates: NumberWithCoordinates,
+    input: List<String>
+) = (numberWithCoordinates.fromX.dec()..numberWithCoordinates.toX.inc()).flatMap { xIndex ->
+    (numberWithCoordinates.y.dec()..numberWithCoordinates.y.inc() step setStepDependingIfOnStartOrEndPosition(
+        xIndex,
+        numberWithCoordinates
+    )).map { yIndex ->
+        input.getOrNull(yIndex)?.getOrNull(xIndex).isValidNeighbour()
     }
 }
 
-data class NumberWithCoordinates(
+private fun setStepDependingIfOnStartOrEndPosition(
+    xIndex: Int,
+    numberWithCoordinates: NumberWithCoordinates,
+) = if (xIndex < numberWithCoordinates.fromX || xIndex > numberWithCoordinates.toX) 1 else 2
+
+private fun Char?.isValidNeighbour(): Boolean = if (this == null) false else this != '.'
+
+private fun List<String>.parse(): List<NumberWithCoordinates> = flatMapIndexed { y, line ->
+    numberRegex.findAll(line).map { match ->
+        NumberWithCoordinates(
+            number = match.value.toInt(),
+            y = y,
+            fromX = match.range.first,
+            toX = match.range.last,
+        )
+    }
+}
+
+private data class NumberWithCoordinates(
     val number: Int,
     val y: Int,
     val fromX: Int,
     val toX: Int,
 )
 
-val symbols = listOf('*', '#', '+', '$', '/')
+private val numberRegex = "\\d+".toRegex()
