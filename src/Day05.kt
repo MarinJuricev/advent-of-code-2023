@@ -17,10 +17,13 @@ private fun part1(
         .fold(mutableListOf<CategoryRange>()) { accRange, element ->
             when {
                 element.isEmpty() -> accRange
-                element.contains("map") -> buildCategoryRange(element, accRange)
-                else -> {
+                element.contains("map") ->  accRange.also {
+                    it.add(
+                        CategoryRange()
+                    )
+                }
+                else -> accRange.also {
                     updateMap(element, accRange)
-                    accRange
                 }
             }
         }
@@ -45,42 +48,7 @@ private fun updateMap(element: String, accRange: MutableList<CategoryRange>) {
     }
 }
 
-private fun buildCategoryRange(
-    element: String,
-    accRange: MutableList<CategoryRange>,
-): MutableList<CategoryRange> {
-    val (fromCategory, toCategory) = element
-        .substringBefore(" map:")
-        .split("-to-")
-    return accRange.also {
-        it.add(
-            CategoryRange(
-                fromType = Category.fromValue(fromCategory),
-                toType = Category.fromValue(toCategory),
-            )
-        )
-    }
-}
-
 private data class CategoryRange(
-    val fromType: Category,
-    val toType: Category,
     val indexMap: MutableMap<Long, Long> = mutableMapOf()
 )
 
-private enum class Category(val value: String) {
-    SEEDS("seed"),
-    SOIL("soil"),
-    FERTILIZER("fertilizer"),
-    WATER("water"),
-    LIGHT("light"),
-    TEMPERATURE("temperature"),
-    HUMIDITY("humidity"),
-    LOCATION("location");
-
-    companion object {
-        fun fromValue(value: String): Category =
-            entries.first { it.value == value }
-
-    }
-}
