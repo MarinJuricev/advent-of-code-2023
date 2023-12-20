@@ -1,54 +1,61 @@
+import kotlin.system.measureNanoTime
+import kotlin.system.measureTimeMillis
+
 fun main() {
-    check(part1(readInput("Day05a_test")) == 35L)
-    part1(readInput("Day05a")).println()
+    measureTimeMillis {
+        val input = readInput("Day05a")
+        val seeds = getSeeds(input)
+        val seedRanges = seeds.chunked(2).map { (start, length) -> start..<start + length }
+
+        val elfMaps = input.drop(1).split { it.isEmpty() }.map { it.toElfMap() }.reversed()
+        val part1 = elfMaps.findLocation { it in seeds }
+        val part2 = elfMaps.findLocation { seedRanges.any { range -> it in range } }
+    }.println()
 }
 
 private fun part1(
     input: List<String>
 ): Long {
-    val seeds = input
-        .first()
-        .substringAfter("seeds: ")
-        .split(" ")
-        .map(String::toLong)
+    val seeds = getSeeds(input)
+    val elfMaps = input.drop(1).split { it.isEmpty() }.map { it.toElfMap() }.reversed()
 
-    val categories = input
-        .drop(2)
-        .fold(mutableListOf<CategoryRange>()) { accRange, element ->
-            when {
-                element.isEmpty() -> accRange
-                element.contains("map") ->  accRange.also {
-                    it.add(
-                        CategoryRange()
-                    )
-                }
-                else -> accRange.also {
-                    updateMap(element, accRange)
-                }
-            }
-        }
-
-    return seeds.minOfOrNull { seed ->
-        categories.fold(seed) { acc, next ->
-            next.indexMap.getOrDefault(acc, acc)
-        }
-    } ?: 0L
+    return elfMaps.findLocation { it in seeds }
 }
 
-private fun updateMap(element: String, accRange: MutableList<CategoryRange>) {
-    val (sourceCategory, destinationCategory, step) = element.split(" ")
-    val sourceCategoryConverted = sourceCategory.toLong()
-    val destinationCategoryConverted = destinationCategory.toLong()
-    val stepConverted = step.toInt()
+private fun getSeeds(input: List<String>) = input
+    .first() // Tbh could've used .extractLongs
+    .substringAfter("seeds: ")
+    .split(" ")
+    .map(String::toLong)
 
-    // Modify the existing map in place
-    val indexMap = accRange.last().indexMap
-    repeat(stepConverted) {
-        indexMap[destinationCategoryConverted + it] = sourceCategoryConverted + it
+
+private fun List<String>.toElfMap(): ElfMap =
+    drop(1)
+        .joinToString()
+        .extractLongs()
+        .chunked(3)
+        .fold(ElfMap()) { acc, (destinationStart, sourceStart, length) ->
+            ElfMap(
+                sourceRanges = acc.sourceRanges + listOf(sourceStart..<sourceStart + length),
+                destinationRanges = acc.destinationRanges + listOf(destinationStart..<destinationStart + length)
+            )
+        }
+
+private fun List<ElfMap>.findLocation(seedPredicate: (Long) -> Boolean): Long =
+    generateSequence(0L) { it + 1 }.first { location ->
+        val seed = fold(location) { acc, elfMap -> elfMap[acc] }
+        seedPredicate(seed)
     }
+
+private data class ElfMap(
+    val sourceRanges: List<LongRange> = listOf(),
+    val destinationRanges: List<LongRange> = listOf(),
+) {
+    operator fun get(destinationValue: Long): Long = destinationRanges
+        .indexOfFirst { range -> destinationValue in range }
+        .takeIf { it != -1 }
+        ?.let { index ->
+            val sourceValue = destinationValue + sourceRanges[index].first - destinationRanges[index].first
+            sourceValue.takeIf { it in sourceRanges[index] }
+        } ?: destinationValue
 }
-
-private data class CategoryRange(
-    val indexMap: MutableMap<Long, Long> = mutableMapOf()
-)
-
