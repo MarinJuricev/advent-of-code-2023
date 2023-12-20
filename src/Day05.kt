@@ -1,20 +1,20 @@
 fun main() {
-    check(part1(readInput("Day05a_test")) == 35.0)
+    check(part1(readInput("Day05a_test")) == 35L)
     part1(readInput("Day05a")).println()
 }
 
 private fun part1(
     input: List<String>
-): Double {
+): Long {
     val seeds = input
         .first()
         .substringAfter("seeds: ")
         .split(" ")
-        .map(String::toDouble)
+        .map(String::toLong)
 
     val categories = input
         .drop(2)
-        .fold(mutableListOf()) { accRange: MutableList<CategoryRange>, element: String ->
+        .fold(mutableListOf<CategoryRange>()) { accRange, element ->
             when {
                 element.isEmpty() -> accRange
                 element.contains("map") -> buildCategoryRange(element, accRange)
@@ -27,27 +27,22 @@ private fun part1(
 
     return seeds.minOfOrNull { seed ->
         categories.fold(seed) { acc, next ->
-             next.indexMap.getOrDefault(acc, acc)
+            next.indexMap.getOrDefault(acc, acc)
         }
-    } ?: 0.0
+    } ?: 0L
 }
 
 private fun updateMap(element: String, accRange: MutableList<CategoryRange>) {
     val (sourceCategory, destinationCategory, step) = element.split(" ")
-    val sourceCategoryConverted = sourceCategory.toDouble()
-    val destinationCategoryConverted = destinationCategory.toDouble()
+    val sourceCategoryConverted = sourceCategory.toLong()
+    val destinationCategoryConverted = destinationCategory.toLong()
     val stepConverted = step.toInt()
 
-    val updatedCategoryRange = accRange.last().copy(
-        indexMap = accRange.last().indexMap.plus(
-            buildMap {
-                repeat(stepConverted) {
-                    put(destinationCategoryConverted + it, sourceCategoryConverted + it)
-                }
-            }
-        )
-    )
-    accRange[accRange.lastIndex] = updatedCategoryRange
+    // Modify the existing map in place
+    val indexMap = accRange.last().indexMap
+    repeat(stepConverted) {
+        indexMap[destinationCategoryConverted + it] = sourceCategoryConverted + it
+    }
 }
 
 private fun buildCategoryRange(
@@ -70,7 +65,7 @@ private fun buildCategoryRange(
 private data class CategoryRange(
     val fromType: Category,
     val toType: Category,
-    val indexMap: Map<Double, Double> = emptyMap()
+    val indexMap: MutableMap<Long, Long> = mutableMapOf()
 )
 
 private enum class Category(val value: String) {
