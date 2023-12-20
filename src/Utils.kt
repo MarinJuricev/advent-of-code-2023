@@ -19,3 +19,16 @@ fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteA
  * The cleaner shorthand for printing output.
  */
 fun Any?.println() = println(this)
+
+fun String.extractInts() = Regex("-?\\d+").findAll(this).map { it.value.toInt() }.toList()
+
+fun String.extractLongs() = Regex("-?\\d+").findAll(this).map { it.value.toLong() }.toList()
+
+fun <T> List<T>.split(predicate: (T) -> Boolean): List<List<T>> =
+    fold(listOf(emptyList())) { acc, element ->
+        if (predicate(element)) {
+            acc + listOf(emptyList())
+        } else {
+            acc.dropLast(1) + listOf(acc.last() + element)
+        }
+    }
