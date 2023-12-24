@@ -1,8 +1,11 @@
 import CardCombo.*
 
 fun main() {
-    check(part1(readInput("Day07a_test")) == 6440)
-    part1(readInput("Day07a")).println()
+//    check(part1(readInput("Day07a_test")) == 6440)
+//    part1(readInput("Day07a")).println()
+
+    check(part2(readInput("Day07a_test")) == 5905)
+    part2(readInput("Day07a")).println()
 }
 
 private fun part1(
@@ -18,6 +21,29 @@ private fun part1(
                 type = cardHand.toCardCombo()
             )
         }.sortedWith(cardHandComparator)
+
+    val cardsSize = cards.size
+
+    return cards
+        .foldIndexed(0) { index, acc, next ->
+            acc + next.bid * (cardsSize - index)
+        }
+}
+
+private fun part2(
+    input: List<String>,
+): Int {
+    val cards = input
+        .map { line ->
+            val (cardHand, bid) = line.split(" ")
+
+            CardHand(
+                cards = cardHand,
+                bid = bid.toIntOrNull() ?: error("Got unexpected bid: $bid"),
+                type = cardHand.toCardCombo2()
+            )
+        }.sortedWith(cardHandComparator)
+
     val cardsSize = cards.size
 
     return cards
@@ -43,41 +69,43 @@ private val cardHandComparator = Comparator<CardHand> { hand1, hand2 ->
 }
 
 private fun String.toCardCombo(): CardCombo {
-    val cardMap = map { it }.groupingBy { it }.eachCount()
+    val cardMap: Map<Char, Int> = map { it }.groupingBy { it }.eachCount()
+
     return when (cardMap.size) {
-        1 -> FiveOfAKind(value = cardMap.keys.first().toString())
-        2 -> if (cardMap.values.any { it == 4 }) {
-            FourOfaKind(
-                value = cardMap.keys.first().toString(),
-                leftover = cardMap.keys.drop(1).joinToString("")
-            )
-        } else FullHouse(
-            threes = cardMap.keys.first().toString(),
-            pair = cardMap.keys.elementAtOrNull(1)?.toString()
-                ?: error("Got error while accessing 1 index in ${cardMap.keys}")
-        )
-
-        3 ->
-            if (cardMap.values.any { it == 3 }) ThreeOfAKind( // or two pairs
-                value = cardMap.keys.first().toString(),
-                leftover = cardMap.keys.drop(1).joinToString("")
-            ) else {
-                TwoPair(
-                    firstPair = cardMap.keys.first().toString(),
-                    secondPair = cardMap.keys.elementAtOrNull(1)?.toString()
-                        ?: error("Got error while accessing 1 index in ${cardMap.keys}"),
-                    leftover = cardMap.keys.drop(2).joinToString("")
-                )
-            }
-
-        4 -> OnePair(
-            pair = cardMap.keys.first().toString(),
-            leftover = cardMap.keys.drop(1).joinToString("")
-        )
-
-        else -> HighCard(value = this)
+        1 -> FIVE_OF_A_KIND
+        2 -> if (cardMap.values.any { it == 4 }) FOUR_OF_A_KIND else FULL_HOUSE
+        3 -> if (cardMap.values.any { it == 3 }) THREE_OF_A_KIND else TWO_PAIR
+        4 -> ONE_PAIR
+        else -> HIGH_CARD
     }
+}
 
+private fun String.toCardCombo2(): CardCombo {
+    val numberOfJokers = count { it == 'J' }
+    if (numberOfJokers == 0) return toCardCombo()
+
+    val cardMapWithoutJokers: Map<Char, Int> = map { it }.groupingBy { it }.eachCount().minus('J')
+
+    return when (cardMapWithoutJokers.size) {
+        1 -> FIVE_OF_A_KIND
+        2 -> when {
+            cardMapWithoutJokers.values.any { it == 3 } && numberOfJokers == 1 -> FOUR_OF_A_KIND
+            cardMapWithoutJokers.values.all { it == 2 } && numberOfJokers == 1 -> FULL_HOUSE
+            cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 2 -> FOUR_OF_A_KIND
+            cardMapWithoutJokers.values.all { it == 1 } && numberOfJokers == 3 -> FOUR_OF_A_KIND
+            else -> FULL_HOUSE
+        }
+
+        3 -> when {
+            cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 1 -> THREE_OF_A_KIND
+            cardMapWithoutJokers.values.all { it == 1 } && numberOfJokers == 2 -> THREE_OF_A_KIND
+            else -> TWO_PAIR
+        }
+
+        else -> ONE_PAIR
+    }.also {
+        it
+    }
 }
 
 private data class CardHand(
@@ -87,23 +115,15 @@ private data class CardHand(
 )
 
 
-private sealed interface CardCombo {
+private enum class CardCombo(val priority: Int) {
 
-    val priority: Int
-
-    data class FiveOfAKind(val value: String, override val priority: Int = 1) : CardCombo
-    data class FourOfaKind(val value: String, val leftover: String, override val priority: Int = 2) : CardCombo
-    data class FullHouse(val threes: String, val pair: String, override val priority: Int = 3) : CardCombo
-    data class ThreeOfAKind(val value: String, val leftover: String, override val priority: Int = 4) : CardCombo
-    data class TwoPair(
-        val firstPair: String,
-        val secondPair: String,
-        val leftover: String,
-        override val priority: Int = 5
-    ) : CardCombo
-
-    data class OnePair(val pair: String, val leftover: String, override val priority: Int = 6) : CardCombo
-    data class HighCard(val value: String, override val priority: Int = 7) : CardCombo
+    FIVE_OF_A_KIND(1),
+    FOUR_OF_A_KIND(2),
+    FULL_HOUSE(3),
+    THREE_OF_A_KIND(4),
+    TWO_PAIR(5),
+    ONE_PAIR(6),
+    HIGH_CARD(7);
 }
 
 private enum class Card(
@@ -113,7 +133,10 @@ private enum class Card(
     A(priority = 1, value = 'A'),
     K(priority = 2, value = 'K'),
     Q(priority = 3, value = 'Q'),
-    J(priority = 14, value = 'J'), // To lazy to introduce a smarter way for the J or Joker ( depending on the part ), manually edit it depending on the part
+    J(
+        priority = 14,
+        value = 'J'
+    ), // To lazy to introduce a smarter way for the J or Joker ( depending on the part ), manually edit it depending on the part
     T(priority = 5, value = 'T'),
     NINE(priority = 6, value = '9'),
     EIGHT(priority = 7, value = '8'),
