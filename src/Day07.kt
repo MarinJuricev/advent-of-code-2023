@@ -1,15 +1,16 @@
 import CardCombo.*
 
 fun main() {
-//    check(part1(readInput("Day07a_test")) == 6440)
-//    part1(readInput("Day07a")).println()
+    check(solvePuzzle(readInput("Day07a_test"), cardComboMapper = { it.toCardComboPart1() }) == 6440)
+    solvePuzzle(readInput("Day07a"), cardComboMapper = { it.toCardComboPart1() }).println()
 
-    check(part2(readInput("Day07a_test")) == 5905)
-    part2(readInput("Day07a")).println()
+    check(solvePuzzle(readInput("Day07a_test"), cardComboMapper = { it.toCardComboPart2() }) == 5905)
+    solvePuzzle(readInput("Day07a"), cardComboMapper = { it.toCardComboPart2() }).println()
 }
 
-private fun part1(
+private fun solvePuzzle(
     input: List<String>,
+    cardComboMapper: (String) -> CardCombo,
 ): Int {
     val cards = input
         .map { line ->
@@ -18,7 +19,7 @@ private fun part1(
             CardHand(
                 cards = cardHand,
                 bid = bid.toIntOrNull() ?: error("Got unexpected bid: $bid"),
-                type = cardHand.toCardCombo()
+                type = cardComboMapper(cardHand)
             )
         }.sortedWith(cardHandComparator)
 
@@ -29,29 +30,6 @@ private fun part1(
             acc + next.bid * (cardsSize - index)
         }
 }
-
-private fun part2(
-    input: List<String>,
-): Int {
-    val cards = input
-        .map { line ->
-            val (cardHand, bid) = line.split(" ")
-
-            CardHand(
-                cards = cardHand,
-                bid = bid.toIntOrNull() ?: error("Got unexpected bid: $bid"),
-                type = cardHand.toCardCombo2()
-            )
-        }.sortedWith(cardHandComparator)
-
-    val cardsSize = cards.size
-
-    return cards
-        .foldIndexed(0) { index, acc, next ->
-            acc + next.bid * (cardsSize - index)
-        }
-}
-
 
 private val cardHandComparator = Comparator<CardHand> { hand1, hand2 ->
     when {
@@ -68,7 +46,7 @@ private val cardHandComparator = Comparator<CardHand> { hand1, hand2 ->
     }
 }
 
-private fun String.toCardCombo(): CardCombo {
+private fun String.toCardComboPart1(): CardCombo {
     val cardMap: Map<Char, Int> = map { it }.groupingBy { it }.eachCount()
 
     return when (cardMap.size) {
@@ -80,31 +58,23 @@ private fun String.toCardCombo(): CardCombo {
     }
 }
 
-private fun String.toCardCombo2(): CardCombo {
+private fun String.toCardComboPart2(): CardCombo {
     val numberOfJokers = count { it == 'J' }
-    if (numberOfJokers == 0) return toCardCombo()
+    if (numberOfJokers == 0 || numberOfJokers == 5) return toCardComboPart1()
 
     val cardMapWithoutJokers: Map<Char, Int> = map { it }.groupingBy { it }.eachCount().minus('J')
 
-    return when (cardMapWithoutJokers.size) {
-        1 -> FIVE_OF_A_KIND
-        2 -> when {
-            cardMapWithoutJokers.values.any { it == 3 } && numberOfJokers == 1 -> FOUR_OF_A_KIND
-            cardMapWithoutJokers.values.all { it == 2 } && numberOfJokers == 1 -> FULL_HOUSE
-            cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 2 -> FOUR_OF_A_KIND
-            cardMapWithoutJokers.values.all { it == 1 } && numberOfJokers == 3 -> FOUR_OF_A_KIND
-            else -> FULL_HOUSE
-        }
-
-        3 -> when {
-            cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 1 -> THREE_OF_A_KIND
-            cardMapWithoutJokers.values.all { it == 1 } && numberOfJokers == 2 -> THREE_OF_A_KIND
-            else -> TWO_PAIR
-        }
-
+    return when {
+        cardMapWithoutJokers.size == 1 -> FIVE_OF_A_KIND
+        cardMapWithoutJokers.size == 2 && cardMapWithoutJokers.values.any { it == 3 } && numberOfJokers == 1 -> FOUR_OF_A_KIND
+        cardMapWithoutJokers.size == 2 && cardMapWithoutJokers.values.all { it == 2 } -> FULL_HOUSE
+        cardMapWithoutJokers.size == 2 && cardMapWithoutJokers.values.all { it == 1 } -> FOUR_OF_A_KIND
+        cardMapWithoutJokers.size == 2 && cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 2 -> FOUR_OF_A_KIND
+        cardMapWithoutJokers.size == 2 -> FULL_HOUSE
+        cardMapWithoutJokers.size == 3 && cardMapWithoutJokers.values.any { it == 2 } && numberOfJokers == 1 -> THREE_OF_A_KIND
+        cardMapWithoutJokers.size == 3 && cardMapWithoutJokers.values.all { it == 1 } -> THREE_OF_A_KIND
+        cardMapWithoutJokers.size == 3 -> TWO_PAIR
         else -> ONE_PAIR
-    }.also {
-        it
     }
 }
 
