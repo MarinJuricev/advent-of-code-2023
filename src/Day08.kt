@@ -34,15 +34,7 @@ private tailrec fun List<PositionWithDirections>.getEndInSteps(
     if (currentDestination.value == "ZZZ")
         return stepsNeeded
 
-    val nextInstructionsIndex =
-        if (stepsNeeded <= instructions.lastIndex) stepsNeeded
-        else {
-            var newIndex = stepsNeeded
-            while (newIndex >= instructions.length) {
-                newIndex -= instructions.length
-            }
-            newIndex
-        }
+    val nextInstructionsIndex = stepsNeeded % instructions.length
     val nextDirection = when (val currentInstruction =
         instructions.getOrNull(nextInstructionsIndex)) {
         'R' -> currentDestination.rightDirection
