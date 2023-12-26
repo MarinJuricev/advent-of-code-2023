@@ -9,8 +9,7 @@ private fun part1(
     input: List<String>,
 ): Int {
     val (instructions, mazes) = input.split { it.isEmpty() }
-
-    return mazes.map { maze ->
+    val positions = mazes.map { maze ->
         val (value, leftAndRight) = maze.split(" = ")
         val (left, right) = leftAndRight
             .removeSurrounding("(", ")")
@@ -21,7 +20,9 @@ private fun part1(
             leftDirection = left,
             rightDirection = right,
         )
-    }.getEndInSteps(instructions = instructions.first())
+    }
+
+    return positions.getEndInSteps(instructions = instructions.first(), index = positions.indexOfFirst { it.value == "AAA" })
 }
 
 private tailrec fun List<PositionWithDirections>.getEndInSteps(
